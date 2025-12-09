@@ -1,0 +1,31 @@
+---
+- name: Install RKE2 Agent
+  hosts: agent
+  become: yes
+
+  tasks:
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+
+    - name: Set server URL and token
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          server: https://{{ hostvars['vm1']['ansible_host'] }}:9345
+          token: K10ef870cccc24886e9444efa0eafab696b7f312db8012e9e19a58bc7fa6faa667e::server:827fdc7b8fb4b013e04285f5a1fc8767
+    - name: Download RKE2 install script
+      get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: '0755'
+
+    - name: Install agent
+      shell: INSTALL_RKE2_TYPE=agent sh /tmp/install.sh
+
+    - name: Enable and start agent
+      systemd:
+        name: rke2-agent
+        enabled: yes
+        state: started
