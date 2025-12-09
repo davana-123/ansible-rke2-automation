@@ -4,6 +4,7 @@
   become: yes
 
   tasks:
+
     - name: Create RKE2 config directory
       file:
         path: /etc/rancher/rke2
@@ -20,7 +21,6 @@
           tls-san:
             - "192.168.56.101"
 
-          # Optional but recommended
           disable-cloud-controller: true
           write-kubeconfig-mode: "0644"
 
@@ -44,7 +44,6 @@
       file:
         path: /root/.kube
         state: directory
-      tags: [rke2, server, kube]
 
     - name: Copy kubeconfig
       copy:
@@ -52,11 +51,16 @@
         dest: /root/.kube/config
         remote_src: yes
         mode: '0600'
-      tags: [rke2, server, kube]
+
+    - name: Fix kubeconfig - replace localhost with correct server IP
+      replace:
+        path: /root/.kube/config
+        regexp: '127\.0\.0\.1'
+        replace: '192.168.56.101'
+      tags: fix_kubeconfig
 
     - name: Symlink kubectl binary
       file:
         src: /var/lib/rancher/rke2/bin/kubectl
         dest: /usr/local/bin/kubectl
         state: link
-      tags: [rke2, server, kube]
