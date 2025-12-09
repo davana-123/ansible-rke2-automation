@@ -40,9 +40,23 @@
         state: started
         daemon_reload: yes
 
-    - name: Copy kubeconfig to default kubectl path
+    - name: Create kube directory
+      file:
+        path: /root/.kube
+        state: directory
+      tags: [rke2, server, kube]
+
+    - name: Copy kubeconfig
       copy:
         src: /etc/rancher/rke2/rke2.yaml
         dest: /root/.kube/config
         remote_src: yes
         mode: '0600'
+      tags: [rke2, server, kube]
+
+    - name: Symlink kubectl binary
+      file:
+        src: /var/lib/rancher/rke2/bin/kubectl
+        dest: /usr/local/bin/kubectl
+        state: link
+      tags: [rke2, server, kube]
