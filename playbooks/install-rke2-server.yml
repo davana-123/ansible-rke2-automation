@@ -20,7 +20,6 @@
           advertise-address: "192.168.56.101"
           tls-san:
             - "192.168.56.101"
-
           disable-cloud-controller: true
           write-kubeconfig-mode: "0644"
 
@@ -40,24 +39,26 @@
         state: started
         daemon_reload: yes
 
+    # -------------------------
+    # Kubeconfig Setup (Correct Method)
+    # -------------------------
     - name: Create kube directory
       file:
         path: /root/.kube
         state: directory
 
-    - name: Copy kubeconfig
+    - name: Copy correct admin kubeconfig
       copy:
-        src: /etc/rancher/rke2/rke2.yaml
+        src: /var/lib/rancher/rke2/server/cred/admin.kubeconfig
         dest: /root/.kube/config
         remote_src: yes
         mode: '0600'
 
-    - name: Fix kubeconfig - replace localhost with correct server IP
+    - name: Update admin kubeconfig server IP
       replace:
         path: /root/.kube/config
-        regexp: '127\.0\.0\.1'
-        replace: '192.168.56.101'
-      tags: fix_kubeconfig
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: 'https://192.168.56.101:6443'
 
     - name: Symlink kubectl binary
       file:
