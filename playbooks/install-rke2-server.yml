@@ -9,7 +9,6 @@
         path: /etc/rancher/rke2
         state: directory
         mode: '0755'
-      tags: [rke2, server, setup]
 
     - name: Create RKE2 server configuration file
       copy:
@@ -22,73 +21,26 @@
             - "192.168.56.101"
           disable-cloud-controller: true
           write-kubeconfig-mode: "0644"
-      tags: [rke2, server, config]
 
     - name: Download RKE2 install script
       get_url:
         url: https://get.rke2.io
         dest: /tmp/install.sh
         mode: '0755'
-      tags: [rke2, server, install]
 
     - name: Install RKE2 server
       shell: INSTALL_RKE2_TYPE=server sh /tmp/install.sh
-      tags: [rke2, server, install]
 
-    - name: Enable and start RKE2 service
+    - name: Enable and start service
       systemd:
         name: rke2-server
         enabled: yes
         state: started
         daemon_reload: yes
-      tags: [rke2, server, service]
 
-    # -------------------------
-    # Dynamic token extraction
-    # -------------------------
-    - name: Read RKE2 server token
-      slurp:
-        src: /var/lib/rancher/rke2/server/node-token
-      register: rke2_token_b64
-      tags: [rke2, server, token]
-
-    - name: Decode token and save as fact
-      set_fact:
-        rke2_token: "{{ rke2_token_b64.content | b64decode | trim }}"
-      tags: [rke2, server, token]
-
-    # -------------------------
-    # Save token to Jenkins workspace
-    # -------------------------
-    - name: Save RKE2 token inside Jenkins workspace
-      copy:
-        dest: "{{ lookup('env','WORKSPACE') }}/rke2_token.txt"
-        content: "{{ rke2_token }}"
-      delegate_to: localhost
-      become: no
-      tags: [rke2, server, token]
-
-    # -------------------------
-    # kubeconfig setup
-    # -------------------------
-    - name: Create kube directory
-      file:
-        path: /root/.kube
-        state: directory
-        mode: '0700'
-      tags: [rke2, server, kube]
-
-    - name: Copy kubeconfig
+    - name: Copy kubeconfig to default kubectl path
       copy:
         src: /etc/rancher/rke2/rke2.yaml
         dest: /root/.kube/config
         remote_src: yes
         mode: '0600'
-      tags: [rke2, server, kube]
-
-    - name: Symlink kubectl binary
-      file:
-        src: /var/lib/rancher/rke2/bin/kubectl
-        dest: /usr/local/bin/kubectl
-        state: link
-      tags: [rke2, server, kube]
